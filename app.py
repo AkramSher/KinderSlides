@@ -34,32 +34,32 @@ TOPICS = {
 # Search terms for Pixabay
 SEARCH_TERMS = {
     "ABC": {
-        "A - Apple": "apple cartoon",
-        "B - Ball": "ball cartoon",
-        "C - Cat": "cat cartoon",
-        "D - Dog": "dog cartoon",
-        "E - Elephant": "elephant cartoon",
-        "F - Fish": "fish cartoon",
-        "G - Giraffe": "giraffe cartoon",
-        "H - House": "house cartoon",
-        "I - Ice cream": "ice cream cartoon",
-        "J - Jellyfish": "jellyfish cartoon",
-        "K - Kite": "kite cartoon",
-        "L - Lion": "lion cartoon",
-        "M - Moon": "moon cartoon",
-        "N - Nest": "nest cartoon",
-        "O - Orange": "orange fruit cartoon",
-        "P - Penguin": "penguin cartoon",
-        "Q - Queen": "queen cartoon",
-        "R - Rainbow": "rainbow cartoon",
-        "S - Sun": "sun cartoon",
-        "T - Tree": "tree cartoon",
-        "U - Umbrella": "umbrella cartoon",
-        "V - Violin": "violin cartoon",
-        "W - Whale": "whale cartoon",
-        "X - X-ray": "x-ray cartoon",
-        "Y - Yacht": "yacht cartoon",
-        "Z - Zebra": "zebra cartoon"
+        "A - Apple": "red apple fruit illustration",
+        "B - Ball": "colorful ball toy illustration",
+        "C - Cat": "cute cat animal illustration",
+        "D - Dog": "friendly dog pet illustration",
+        "E - Elephant": "gray elephant animal illustration",
+        "F - Fish": "colorful fish swimming illustration",
+        "G - Giraffe": "tall giraffe animal illustration",
+        "H - House": "simple house home illustration",
+        "I - Ice cream": "ice cream cone dessert illustration",
+        "J - Jellyfish": "jellyfish ocean animal illustration",
+        "K - Kite": "colorful kite flying illustration",
+        "L - Lion": "lion king animal illustration",
+        "M - Moon": "crescent moon night illustration",
+        "N - Nest": "bird nest with eggs illustration",
+        "O - Orange": "orange citrus fruit illustration",
+        "P - Penguin": "cute penguin bird illustration",
+        "Q - Queen": "royal queen crown illustration",
+        "R - Rainbow": "colorful rainbow arch illustration",
+        "S - Sun": "bright yellow sun illustration",
+        "T - Tree": "green tree nature illustration",
+        "U - Umbrella": "colorful umbrella rain illustration",
+        "V - Violin": "musical violin instrument illustration",
+        "W - Whale": "blue whale ocean animal illustration",
+        "X - X-ray": "x-ray medical skeleton illustration",
+        "Y - Yacht": "sailing boat yacht illustration",
+        "Z - Zebra": "black white zebra animal illustration"
     },
     "Numbers 1-5": {
         "1 - One": "number 1 cartoon",
@@ -88,36 +88,88 @@ SEARCH_TERMS = {
     }
 }
 
-def search_pixabay_image(search_term):
-    """Search for an image on Pixabay API"""
-    try:
-        params = {
-            'key': PIXABAY_API_KEY,
-            'q': search_term,
-            'image_type': 'illustration',
-            'category': 'education',
-            'safesearch': 'true',
-            'per_page': 5,
-            'min_width': 640,
-            'min_height': 480
-        }
-        
-        response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        
-        if data.get('hits') and len(data['hits']) > 0:
-            # Get the first suitable image
-            image_url = data['hits'][0]['webformatURL']
-            return download_image(image_url)
-        else:
-            logging.warning(f"No images found for search term: {search_term}")
-            return None
+def search_pixabay_image(search_term, item_name=None):
+    """Search for an image on Pixabay API with improved accuracy"""
+    
+    # Extract base word for better searching
+    base_word = search_term
+    if item_name:
+        base_word = item_name.split(' - ')[-1] if ' - ' in item_name else item_name
+    
+    # Create multiple search variations for better results
+    search_variations = [search_term]
+    
+    if item_name:
+        # Add more specific search terms
+        search_variations = [
+            f"{base_word} cartoon illustration",
+            f"{base_word} vector illustration",
+            f"{base_word} cartoon kids",
+            f"{base_word} simple illustration",
+            search_term,  # Original search term as fallback
+        ]
+    
+    for search in search_variations:
+        try:
+            # Try with education category first
+            params = {
+                'key': PIXABAY_API_KEY,
+                'q': search,
+                'image_type': 'illustration',
+                'category': 'education',
+                'safesearch': 'true',
+                'per_page': 10,
+                'min_width': 400,
+                'min_height': 300
+            }
             
-    except Exception as e:
-        logging.error(f"Error searching Pixabay for '{search_term}': {str(e)}")
-        return None
+            response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Filter results to find relevant images
+            if data.get('hits'):
+                for hit in data['hits']:
+                    tags = hit.get('tags', '').lower()
+                    # Check if the image tags are relevant to our search
+                    if any(word in tags for word in base_word.lower().split() if len(word) > 2):
+                        image_url = hit['webformatURL']
+                        downloaded_image = download_image(image_url)
+                        if downloaded_image:
+                            logging.info(f"Found relevant image for '{item_name}' with search: '{search}'")
+                            return downloaded_image
+                
+                # If no relevant images found, try the first result as fallback
+                if len(data['hits']) > 0:
+                    image_url = data['hits'][0]['webformatURL']
+                    downloaded_image = download_image(image_url)
+                    if downloaded_image:
+                        logging.info(f"Using fallback image for '{item_name}' with search: '{search}'")
+                        return downloaded_image
+            
+            # If education category doesn't work, try without category restriction
+            if not data.get('hits'):
+                params.pop('category', None)
+                response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get('hits'):
+                    for hit in data['hits']:
+                        tags = hit.get('tags', '').lower()
+                        if any(word in tags for word in base_word.lower().split() if len(word) > 2):
+                            image_url = hit['webformatURL']
+                            downloaded_image = download_image(image_url)
+                            if downloaded_image:
+                                logging.info(f"Found relevant image for '{item_name}' with search: '{search}' (no category)")
+                                return downloaded_image
+                            
+        except Exception as e:
+            logging.error(f"Error searching Pixabay for '{search}': {str(e)}")
+            continue
+    
+    logging.warning(f"No relevant images found for: {item_name or search_term}")
+    return None
 
 def download_image(image_url):
     """Download image from URL and return as BytesIO object"""
@@ -187,7 +239,7 @@ def create_presentation(topic, items, search_terms):
                 
                 # Search and add image
                 search_term = search_terms.get(item, item + " cartoon")
-                image_stream = search_pixabay_image(search_term)
+                image_stream = search_pixabay_image(search_term, item)
                 
                 if image_stream:
                     # Add image to slide
@@ -251,7 +303,18 @@ def generate_presentation():
             # Generate search terms for custom items
             search_terms = {}
             for item in items:
-                search_terms[item] = f"{item} cartoon for kids"
+                # Create more specific search terms based on common categories
+                item_lower = item.lower()
+                if any(word in item_lower for word in ['car', 'bus', 'truck', 'train', 'plane', 'bike', 'auto', 'lorry', 'helicopter']):
+                    search_terms[item] = f"{item} vehicle transport illustration"
+                elif any(word in item_lower for word in ['dog', 'cat', 'bird', 'fish', 'lion', 'tiger', 'elephant', 'horse']):
+                    search_terms[item] = f"{item} animal cute illustration"
+                elif any(word in item_lower for word in ['apple', 'banana', 'orange', 'grape', 'strawberry', 'mango']):
+                    search_terms[item] = f"{item} fresh fruit illustration"
+                elif any(word in item_lower for word in ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink']):
+                    search_terms[item] = f"{item} color bright illustration"
+                else:
+                    search_terms[item] = f"{item} simple children illustration"
             
         elif topic and topic in TOPICS:
             # Use predefined topic
