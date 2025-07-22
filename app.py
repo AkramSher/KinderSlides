@@ -227,7 +227,7 @@ def search_pixabay_image(search_term, item_name=None):
 def validate_image_with_ai(image_data, expected_item):
     """Use OpenAI's vision model to validate if image matches the expected item"""
     if not openai_client:
-        logging.warning("OpenAI client not available, skipping AI validation")
+        logging.warning("OpenAI client not available, using tag validation only")
         return True  # Fall back to tag validation if no OpenAI
     
     try:
@@ -266,13 +266,14 @@ def validate_image_with_ai(image_data, expected_item):
                 }
             ],
             response_format={"type": "json_object"},
-            max_tokens=300
+            max_tokens=300,
+            timeout=10  # Add timeout to prevent hanging
         )
         
         content = response.choices[0].message.content
         if not content:
             logging.error("Empty response from OpenAI")
-            return False
+            return True  # Fall back to accepting the image
         result = json.loads(content)
         matches = result.get('matches', False)
         confidence = result.get('confidence', 0.0)
@@ -284,11 +285,16 @@ def validate_image_with_ai(image_data, expected_item):
         return matches and confidence >= 0.7
         
     except Exception as e:
-        logging.error(f"AI validation failed for '{expected_item}': {str(e)}")
-        return False  # Be conservative - reject if AI validation fails
+        # Handle rate limits and other API errors gracefully
+        if "429" in str(e) or "rate" in str(e).lower():
+            logging.warning(f"OpenAI rate limit hit for '{expected_item}', falling back to tag validation")
+            return True  # Accept image with tag validation only
+        else:
+            logging.error(f"AI validation failed for '{expected_item}': {str(e)}")
+            return True  # Be permissive when AI fails - fall back to tag validation
 
-def search_pixabay_with_ai_validation(search_term, item_name=None):
-    """Enhanced search with AI validation for maximum accuracy"""
+def search_pixabay_with_smart_fallback(search_term, item_name=None):
+    """Enhanced search with AI validation and smart fallback strategies"""
     
     # Extract base word for better searching
     base_word = search_term
@@ -314,6 +320,9 @@ def search_pixabay_with_ai_validation(search_term, item_name=None):
         search_variations = [search_term, base_word]
     
     search_words = base_word.split()
+    best_fallback_image = None
+    ai_validated_count = 0
+    max_ai_validations = 3  # Limit AI calls to prevent rate limits
     
     for search in search_variations:
         try:
@@ -325,7 +334,7 @@ def search_pixabay_with_ai_validation(search_term, item_name=None):
                     'image_type': 'illustration',
                     'category': 'education',
                     'safesearch': 'true',
-                    'per_page': 20,
+                    'per_page': 15,
                     'min_width': 300,
                     'min_height': 200
                 },
@@ -334,16 +343,7 @@ def search_pixabay_with_ai_validation(search_term, item_name=None):
                     'q': search,
                     'image_type': 'vector',
                     'safesearch': 'true',
-                    'per_page': 20,
-                    'min_width': 300,
-                    'min_height': 200
-                },
-                {
-                    'key': PIXABAY_API_KEY,
-                    'q': search,
-                    'image_type': 'illustration',
-                    'safesearch': 'true',
-                    'per_page': 20,
+                    'per_page': 15,
                     'min_width': 300,
                     'min_height': 200
                 }
@@ -355,7 +355,7 @@ def search_pixabay_with_ai_validation(search_term, item_name=None):
                 data = response.json()
                 
                 if data.get('hits'):
-                    # Test each image with both tag validation and AI validation
+                    # Test each image with tag validation first
                     for hit in data['hits']:
                         tags = hit.get('tags', '')
                         
@@ -365,19 +365,34 @@ def search_pixabay_with_ai_validation(search_term, item_name=None):
                             downloaded_image = download_image(image_url)
                             
                             if downloaded_image:
-                                # Second check: AI validation
-                                if validate_image_with_ai(downloaded_image.getvalue(), item_name or search_term):
-                                    logging.info(f"✅ AI VALIDATED image for '{item_name}' with search: '{search}' (tags: {tags[:100]})")
-                                    return downloaded_image
+                                # Store as fallback in case AI validation fails
+                                if not best_fallback_image:
+                                    best_fallback_image = downloaded_image
+                                
+                                # Second check: AI validation (with rate limiting)
+                                if ai_validated_count < max_ai_validations:
+                                    ai_validated_count += 1
+                                    if validate_image_with_ai(downloaded_image.getvalue(), item_name or search_term):
+                                        logging.info(f"✅ AI VALIDATED image for '{item_name}' with search: '{search}'")
+                                        return downloaded_image
+                                    else:
+                                        logging.info(f"❌ AI rejected image for '{item_name}', trying next option")
+                                        continue
                                 else:
-                                    logging.warning(f"❌ AI REJECTED image for '{item_name}' (tags: {tags[:100]})")
-                                    continue
+                                    # Use tag validation only after reaching AI limit
+                                    logging.info(f"✅ TAG VALIDATED image for '{item_name}' (AI limit reached)")
+                                    return downloaded_image
                             
         except Exception as e:
-            logging.error(f"Error in AI-enhanced search for '{search}': {str(e)}")
+            logging.error(f"Error in enhanced search for '{search}': {str(e)}")
             continue
     
-    logging.warning(f"No AI-validated images found for: {item_name or search_term}")
+    # If we have a fallback image from tag validation, use it
+    if best_fallback_image:
+        logging.info(f"🔄 Using fallback image for '{item_name}' (passed tag validation)")
+        return best_fallback_image
+    
+    logging.warning(f"❌ No suitable images found for: {item_name or search_term}")
     return None
 
 def create_text_based_visual(slide, item):
@@ -515,9 +530,9 @@ def create_presentation(topic, items, search_terms):
                 title_paragraph.font.color.rgb = RGBColor(46, 125, 50)  # Green
                 title_paragraph.alignment = PP_ALIGN.CENTER
                 
-                # Search and add image with AI validation
+                # Search and add image with smart fallback
                 search_term = search_terms.get(item, item + " cartoon")
-                image_stream = search_pixabay_with_ai_validation(search_term, item)
+                image_stream = search_pixabay_with_smart_fallback(search_term, item)
                 
                 if image_stream:
                     # Add image to slide
