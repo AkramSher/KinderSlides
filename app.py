@@ -152,12 +152,14 @@ def create_presentation(topic, items, search_terms):
         subtitle.text = "KinderSlides Presentation"
         
         # Style title slide
-        title.text_frame.paragraphs[0].font.size = Pt(54)
-        title.text_frame.paragraphs[0].font.bold = True
-        title.text_frame.paragraphs[0].font.color.rgb = RGBColor(255, 87, 51)  # Orange-red
+        title_para = title.text_frame.paragraphs[0]
+        title_para.font.size = Pt(54)
+        title_para.font.bold = True
+        title_para.font.color.rgb = RGBColor(255, 87, 51)  # Orange-red
         
-        subtitle.text_frame.paragraphs[0].font.size = Pt(32)
-        subtitle.text_frame.paragraphs[0].font.color.rgb = RGBColor(52, 152, 219)  # Blue
+        subtitle_para = subtitle.text_frame.paragraphs[0]
+        subtitle_para.font.size = Pt(32)
+        subtitle_para.font.color.rgb = RGBColor(52, 152, 219)  # Blue
         
         # Create slides for each item
         for item in items:
