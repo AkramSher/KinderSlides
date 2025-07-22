@@ -1,0 +1,213 @@
+/* KinderSlides Custom Styles */
+
+/* Kindergarten-friendly color scheme */
+:root {
+    --kindergarten-primary: #ff6b6b;
+    --kindergarten-secondary: #4ecdc4;
+    --kindergarten-accent: #ffe66d;
+    --kindergarten-success: #95e1d3;
+    --kindergarten-info: #a8e6cf;
+    --kindergarten-purple: #c7ceea;
+}
+
+/* Main title styling */
+.kindergarten-title {
+    background: linear-gradient(45deg, var(--kindergarten-primary), var(--kindergarten-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+}
+
+.kindergarten-subtitle {
+    color: var(--bs-secondary);
+    font-size: 1.2rem;
+}
+
+/* Card styling */
+.kindergarten-card {
+    border: 3px solid var(--kindergarten-secondary);
+    border-radius: 20px;
+    background: var(--bs-body-bg);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.kindergarten-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(78, 205, 196, 0.3);
+}
+
+.kindergarten-card .card-header {
+    background: linear-gradient(135deg, var(--kindergarten-secondary), var(--kindergarten-primary));
+    border-bottom: none;
+    border-radius: 17px 17px 0 0;
+    color: white;
+}
+
+/* Form elements */
+.kindergarten-select {
+    border: 2px solid var(--kindergarten-accent);
+    border-radius: 15px;
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.kindergarten-select:focus {
+    border-color: var(--kindergarten-primary);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 107, 0.25);
+}
+
+.kindergarten-btn {
+    background: linear-gradient(45deg, var(--kindergarten-primary), var(--kindergarten-accent));
+    border: none;
+    border-radius: 15px;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.kindergarten-btn:hover {
+    background: linear-gradient(45deg, var(--kindergarten-accent), var(--kindergarten-primary));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    color: white;
+}
+
+.kindergarten-btn:active {
+    transform: translateY(0);
+}
+
+/* Preview cards */
+.kindergarten-preview {
+    border: 2px solid var(--kindergarten-info);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: var(--bs-body-bg);
+}
+
+.kindergarten-preview:hover {
+    border-color: var(--kindergarten-secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(78, 205, 196, 0.2);
+}
+
+.kindergarten-preview .card-body {
+    padding: 2rem;
+}
+
+.kindergarten-preview .card-title {
+    color: var(--kindergarten-primary);
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Loading animations */
+.spinner-border {
+    animation: spinner-grow 1.5s linear infinite;
+}
+
+@keyframes spinner-grow {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+}
+
+/* Progress bar animation */
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 15px;
+    border: none;
+    font-weight: 500;
+    margin-bottom: 2rem;
+}
+
+.alert-success {
+    background-color: var(--kindergarten-success);
+    color: #2d5a27;
+}
+
+.alert-danger {
+    background-color: #ffb3ba;
+    color: #721c24;
+}
+
+/* Form labels */
+.form-label {
+    color: var(--kindergarten-primary);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .kindergarten-title {
+        font-size: 2.5rem;
+    }
+    
+    .kindergarten-card .card-body {
+        padding: 2rem;
+    }
+    
+    .kindergarten-preview .card-body {
+        padding: 1.5rem;
+    }
+    
+    .kindergarten-btn {
+        font-size: 1.1rem;
+        padding: 12px 25px;
+    }
+}
+
+/* Footer styling */
+footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--kindergarten-info);
+}
+
+footer p {
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+/* Focus states for accessibility */
+.kindergarten-select:focus,
+.kindergarten-btn:focus {
+    outline: 3px solid var(--kindergarten-accent);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .kindergarten-card {
+        border-width: 4px;
+    }
+    
+    .kindergarten-select {
+        border-width: 3px;
+    }
+    
+    .kindergarten-btn {
+        border: 3px solid var(--kindergarten-primary);
+    }
+}
