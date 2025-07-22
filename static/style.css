@@ -1,5 +1,29 @@
 /* KinderSlides Custom Styles */
 
+/* Fullscreen layout enhancements */
+body {
+    overflow-x: hidden;
+}
+
+.vh-100 {
+    min-height: 100vh;
+}
+
+.flex-grow-1 {
+    flex: 1 1 auto;
+}
+
+/* Responsive adjustments for fullscreen */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 2rem !important;
+    }
+}
+
 /* Kindergarten-friendly color scheme */
 :root {
     --kindergarten-primary: #ff6b6b;

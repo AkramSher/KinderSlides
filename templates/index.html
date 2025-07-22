@@ -9,7 +9,7 @@
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <div class="container py-5">
+    <div class="container-fluid vh-100 d-flex flex-column">
         <!-- Header -->
         <div class="text-center mb-5">
             <h1 class="display-4 fw-bold kindergarten-title">
@@ -34,15 +34,15 @@
         {% endwith %}
 
         <!-- Main Content -->
-        <div class="row justify-content-center">
-            <div class="col-lg-8 col-xl-6">
-                <div class="card kindergarten-card shadow-lg">
+        <div class="row justify-content-center flex-grow-1">
+            <div class="col-12 col-lg-10 col-xl-8">
+                <div class="card kindergarten-card shadow-lg h-100">
                     <div class="card-header text-center py-4">
                         <h3 class="mb-0">
                             <i class="fas fa-magic me-2"></i>Choose Your Topic
                         </h3>
                     </div>
-                    <div class="card-body p-5">
+                    <div class="card-body p-5 d-flex flex-column">
                         <form method="POST" action="{{ url_for('generate_presentation') }}" id="topicForm">
                             <div class="mb-4">
                                 <label for="topic" class="form-label h5">
