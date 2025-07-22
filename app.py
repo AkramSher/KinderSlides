@@ -27,6 +27,10 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
+# Global flag to disable AI validation when rate limits are hit
+# Temporarily disable AI to prevent rate limit errors
+ai_validation_disabled = True
+
 # Topic definitions
 TOPICS = {
     "ABC": ["A - Apple", "B - Ball", "C - Cat", "D - Dog", "E - Elephant", "F - Fish", "G - Giraffe", 
@@ -226,9 +230,14 @@ def search_pixabay_image(search_term, item_name=None):
 
 def validate_image_with_ai(image_data, expected_item):
     """Use OpenAI's vision model to validate if image matches the expected item"""
-    if not openai_client:
-        logging.warning("OpenAI client not available, using tag validation only")
-        return True  # Fall back to tag validation if no OpenAI
+    global ai_validation_disabled
+    
+    if not openai_client or ai_validation_disabled:
+        if ai_validation_disabled:
+            logging.warning("AI validation disabled due to rate limits, using tag validation only")
+        else:
+            logging.warning("OpenAI client not available, using tag validation only")
+        return True  # Fall back to tag validation if no OpenAI or disabled
     
     try:
         # Convert image to base64
@@ -286,9 +295,14 @@ def validate_image_with_ai(image_data, expected_item):
         
     except Exception as e:
         # Handle rate limits and other API errors gracefully
-        if "429" in str(e) or "rate" in str(e).lower():
-            logging.warning(f"OpenAI rate limit hit for '{expected_item}', falling back to tag validation")
+        error_str = str(e).lower()
+        if "429" in error_str or "rate" in error_str or "too many requests" in error_str:
+            logging.warning(f"OpenAI rate limit hit for '{expected_item}', disabling AI validation for this session")
+            globals()['ai_validation_disabled'] = True  # Disable AI for the rest of this session
             return True  # Accept image with tag validation only
+        elif "timeout" in error_str:
+            logging.warning(f"OpenAI timeout for '{expected_item}', falling back to tag validation")
+            return True
         else:
             logging.error(f"AI validation failed for '{expected_item}': {str(e)}")
             return True  # Be permissive when AI fails - fall back to tag validation
@@ -369,15 +383,19 @@ def search_pixabay_with_smart_fallback(search_term, item_name=None):
                                 if not best_fallback_image:
                                     best_fallback_image = downloaded_image
                                 
-                                # Second check: AI validation (with rate limiting)
+                                # Second check: AI validation (with rate limiting and error handling)
                                 if ai_validated_count < max_ai_validations:
                                     ai_validated_count += 1
-                                    if validate_image_with_ai(downloaded_image.getvalue(), item_name or search_term):
-                                        logging.info(f"✅ AI VALIDATED image for '{item_name}' with search: '{search}'")
+                                    try:
+                                        if validate_image_with_ai(downloaded_image.getvalue(), item_name or search_term):
+                                            logging.info(f"✅ AI VALIDATED image for '{item_name}' with search: '{search}'")
+                                            return downloaded_image
+                                        else:
+                                            logging.info(f"❌ AI rejected image for '{item_name}', trying next option")
+                                            continue
+                                    except Exception as ai_error:
+                                        logging.warning(f"AI validation error for '{item_name}': {str(ai_error)}, using tag validation only")
                                         return downloaded_image
-                                    else:
-                                        logging.info(f"❌ AI rejected image for '{item_name}', trying next option")
-                                        continue
                                 else:
                                     # Use tag validation only after reaching AI limit
                                     logging.info(f"✅ TAG VALIDATED image for '{item_name}' (AI limit reached)")
@@ -612,8 +630,13 @@ def generate_presentation():
         
         logging.info(f"Generating presentation for topic: {topic}")
         
-        # Create presentation
-        presentation = create_presentation(topic, items, search_terms)
+        # Create presentation with enhanced error handling
+        try:
+            presentation = create_presentation(topic, items, search_terms)
+        except Exception as create_error:
+            logging.error(f"Failed to create presentation: {str(create_error)}")
+            flash('Unable to create presentation due to API limits. Please try again in a few minutes.', 'error')
+            return redirect(url_for('index'))
         
         if not presentation:
             flash('Error creating presentation. Please try again.', 'error')
