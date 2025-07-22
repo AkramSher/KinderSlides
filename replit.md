@@ -68,6 +68,10 @@ Preferred communication style: Simple, everyday language.
   - Authentication via API key (environment variable)
   - RESTful API integration
   - Image search and retrieval
+- **OpenAI API**: For AI-powered image validation
+  - GPT-4o vision model for content verification
+  - Ensures images match educational content requirements
+  - High-confidence validation before slide inclusion
 
 ### Python Libraries
 - **Flask**: Web framework and routing

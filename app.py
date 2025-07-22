@@ -1,6 +1,8 @@
 import os
 import logging
 import requests
+import base64
+import json
 from io import BytesIO
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 from pptx import Presentation
@@ -9,6 +11,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 import tempfile
 import uuid
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -16,9 +19,13 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "kindergarten-slides-secret-key")
 
-# Pixabay API configuration
+# API configurations
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "your-pixabay-api-key")
 PIXABAY_BASE_URL = "https://pixabay.com/api/"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Topic definitions
 TOPICS = {
@@ -217,6 +224,162 @@ def search_pixabay_image(search_term, item_name=None):
     logging.warning(f"No suitable images found for: {item_name or search_term}")
     return None
 
+def validate_image_with_ai(image_data, expected_item):
+    """Use OpenAI's vision model to validate if image matches the expected item"""
+    if not openai_client:
+        logging.warning("OpenAI client not available, skipping AI validation")
+        return True  # Fall back to tag validation if no OpenAI
+    
+    try:
+        # Convert image to base64
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
+        # Extract the main word from item name (e.g., "A - Apple" -> "Apple")
+        main_item = expected_item.split(' - ')[-1] if ' - ' in expected_item else expected_item
+        
+        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+        # do not change this unless explicitly requested by the user
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert at identifying objects in images for educational content. "
+                              "You must be very strict about accuracy. Respond with JSON only."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Does this image clearly show a '{main_item}'? "
+                                   f"This is for kindergarten education, so it should be obvious and child-appropriate. "
+                                   f"Respond with JSON: {{'matches': true/false, 'confidence': 0.0-1.0, 'description': 'brief description of what you see'}}"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=300
+        )
+        
+        content = response.choices[0].message.content
+        if not content:
+            logging.error("Empty response from OpenAI")
+            return False
+        result = json.loads(content)
+        matches = result.get('matches', False)
+        confidence = result.get('confidence', 0.0)
+        description = result.get('description', 'No description')
+        
+        logging.info(f"AI validation for '{expected_item}': matches={matches}, confidence={confidence}, sees='{description}'")
+        
+        # Require high confidence for acceptance
+        return matches and confidence >= 0.7
+        
+    except Exception as e:
+        logging.error(f"AI validation failed for '{expected_item}': {str(e)}")
+        return False  # Be conservative - reject if AI validation fails
+
+def search_pixabay_with_ai_validation(search_term, item_name=None):
+    """Enhanced search with AI validation for maximum accuracy"""
+    
+    # Extract base word for better searching
+    base_word = search_term
+    if item_name:
+        base_word = item_name.split(' - ')[-1] if ' - ' in item_name else item_name
+    
+    # Create comprehensive search variations
+    search_variations = []
+    
+    if item_name:
+        # Multiple specific search strategies
+        search_variations = [
+            f"{base_word} illustration vector",
+            f"{base_word} cartoon children",
+            f"{base_word} simple drawing",
+            f"{base_word} clip art",
+            f"{base_word} icon",
+            f"{base_word} kindergarten",
+            search_term,  # Original search term
+            base_word,    # Just the base word
+        ]
+    else:
+        search_variations = [search_term, base_word]
+    
+    search_words = base_word.split()
+    
+    for search in search_variations:
+        try:
+            # Try multiple parameter combinations
+            param_sets = [
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'illustration',
+                    'category': 'education',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                },
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'vector',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                },
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'illustration',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                }
+            ]
+            
+            for params in param_sets:
+                response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get('hits'):
+                    # Test each image with both tag validation and AI validation
+                    for hit in data['hits']:
+                        tags = hit.get('tags', '')
+                        
+                        # First check: tag validation
+                        if validate_image_relevance(tags, search_words, item_name):
+                            image_url = hit['webformatURL']
+                            downloaded_image = download_image(image_url)
+                            
+                            if downloaded_image:
+                                # Second check: AI validation
+                                if validate_image_with_ai(downloaded_image.getvalue(), item_name or search_term):
+                                    logging.info(f"✅ AI VALIDATED image for '{item_name}' with search: '{search}' (tags: {tags[:100]})")
+                                    return downloaded_image
+                                else:
+                                    logging.warning(f"❌ AI REJECTED image for '{item_name}' (tags: {tags[:100]})")
+                                    continue
+                            
+        except Exception as e:
+            logging.error(f"Error in AI-enhanced search for '{search}': {str(e)}")
+            continue
+    
+    logging.warning(f"No AI-validated images found for: {item_name or search_term}")
+    return None
+
 def create_text_based_visual(slide, item):
     """Create an attractive text-based visual when no image is available"""
     # Create a colorful background shape
@@ -352,9 +515,9 @@ def create_presentation(topic, items, search_terms):
                 title_paragraph.font.color.rgb = RGBColor(46, 125, 50)  # Green
                 title_paragraph.alignment = PP_ALIGN.CENTER
                 
-                # Search and add image
+                # Search and add image with AI validation
                 search_term = search_terms.get(item, item + " cartoon")
-                image_stream = search_pixabay_image(search_term, item)
+                image_stream = search_pixabay_with_ai_validation(search_term, item)
                 
                 if image_stream:
                     # Add image to slide
