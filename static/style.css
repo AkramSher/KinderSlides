@@ -197,6 +197,139 @@ footer p {
     outline-offset: 2px;
 }
 
+/* Custom topic styling */
+.kindergarten-custom-card {
+    border: 2px solid var(--kindergarten-accent);
+    border-radius: 15px;
+    background: var(--bs-body-bg);
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.kindergarten-custom-card:hover {
+    border-color: var(--kindergarten-primary);
+    box-shadow: 0 8px 20px rgba(255, 230, 109, 0.2);
+}
+
+.kindergarten-custom-card .card-header {
+    background: linear-gradient(135deg, var(--kindergarten-accent), var(--kindergarten-secondary));
+    border-bottom: none;
+    border-radius: 13px 13px 0 0;
+    color: #2d2d2d;
+    font-weight: bold;
+}
+
+.kindergarten-input {
+    border: 2px solid var(--kindergarten-info);
+    border-radius: 10px;
+    padding: 12px 15px;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.kindergarten-input:focus {
+    border-color: var(--kindergarten-secondary);
+    box-shadow: 0 0 0 0.25rem rgba(78, 205, 196, 0.25);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+.kindergarten-input::placeholder {
+    color: var(--bs-secondary);
+    opacity: 0.7;
+}
+
+/* Form text styling */
+.form-text {
+    color: var(--kindergarten-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+/* Alert info custom styling */
+.alert-info {
+    background-color: rgba(168, 230, 207, 0.15);
+    border: 1px solid var(--kindergarten-info);
+    color: var(--bs-body-color);
+}
+
+/* Examples section styling */
+.kindergarten-examples {
+    border: 2px solid var(--kindergarten-purple);
+    border-radius: 15px;
+    background: var(--bs-body-bg);
+    transition: all 0.3s ease;
+}
+
+.kindergarten-examples:hover {
+    border-color: var(--kindergarten-secondary);
+    box-shadow: 0 8px 20px rgba(199, 206, 234, 0.2);
+}
+
+.kindergarten-examples .card-header {
+    background: linear-gradient(135deg, var(--kindergarten-purple), var(--kindergarten-info));
+    border-bottom: none;
+    border-radius: 13px 13px 0 0;
+    color: #2d2d2d;
+    font-weight: bold;
+}
+
+.example-topic {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 10px;
+    background: rgba(78, 205, 196, 0.05);
+    border: 1px solid var(--kindergarten-info);
+    transition: all 0.3s ease;
+}
+
+.example-topic:hover {
+    background: rgba(78, 205, 196, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.15);
+}
+
+.example-topic h6 {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+/* Animation for custom section */
+.custom-section-enter {
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+}
+
+.custom-section-exit {
+    animation: slideUp 0.3s ease-in;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+    }
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
     .kindergarten-card {
@@ -209,5 +342,13 @@ footer p {
     
     .kindergarten-btn {
         border: 3px solid var(--kindergarten-primary);
+    }
+    
+    .kindergarten-custom-card {
+        border-width: 3px;
+    }
+    
+    .kindergarten-input {
+        border-width: 3px;
     }
 }

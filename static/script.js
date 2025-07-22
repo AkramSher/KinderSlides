@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const generateBtn = document.getElementById('generateBtn');
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
     const topicSelect = document.getElementById('topic');
+    const customTopicSection = document.getElementById('customTopicSection');
+    const customTopicInput = document.getElementById('custom_topic');
+    const customItemsInput = document.getElementById('custom_items');
     
     // Topic descriptions for enhanced user experience
     const topicDescriptions = {
@@ -35,15 +38,48 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedTopic = this.value;
         updateGenerateButton(selectedTopic);
         addTopicFeedback(selectedTopic);
+        handleCustomTopicVisibility(selectedTopic);
     });
     
     function updateGenerateButton(topic) {
-        if (topic) {
+        if (topic === 'custom') {
+            generateBtn.classList.add('pulse-animation');
+            generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Generate Custom Presentation';
+        } else if (topic) {
             generateBtn.classList.add('pulse-animation');
             generateBtn.innerHTML = `<i class="fas fa-cogs me-2"></i>Generate ${topic} Presentation`;
         } else {
             generateBtn.classList.remove('pulse-animation');
             generateBtn.innerHTML = '<i class="fas fa-cogs me-2"></i>Generate Presentation';
+        }
+    }
+    
+    function handleCustomTopicVisibility(selectedTopic) {
+        if (selectedTopic === 'custom') {
+            customTopicSection.style.display = 'block';
+            customTopicSection.classList.add('custom-section-enter');
+            customTopicSection.classList.remove('custom-section-exit');
+            
+            // Make custom fields required
+            customTopicInput.required = true;
+            customItemsInput.required = true;
+            
+            // Focus on custom topic input
+            setTimeout(() => customTopicInput.focus(), 300);
+        } else {
+            customTopicSection.classList.add('custom-section-exit');
+            customTopicSection.classList.remove('custom-section-enter');
+            
+            // Remove required attribute
+            customTopicInput.required = false;
+            customItemsInput.required = false;
+            
+            setTimeout(() => {
+                customTopicSection.style.display = 'none';
+                // Clear custom fields when hidden
+                customTopicInput.value = '';
+                customItemsInput.value = '';
+            }, 300);
         }
     }
     
@@ -86,6 +122,42 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Validate custom topic if selected
+        if (selectedTopic === 'custom') {
+            const customTopic = customTopicInput.value.trim();
+            const customItems = customItemsInput.value.trim();
+            
+            if (!customTopic) {
+                e.preventDefault();
+                showAlert('Please enter a topic name for your custom presentation!', 'warning');
+                customTopicInput.focus();
+                return;
+            }
+            
+            if (!customItems) {
+                e.preventDefault();
+                showAlert('Please enter items for your custom topic!', 'warning');
+                customItemsInput.focus();
+                return;
+            }
+            
+            // Validate items count (at least 1, max 20)
+            const itemsArray = customItems.split(',').filter(item => item.trim());
+            if (itemsArray.length === 0) {
+                e.preventDefault();
+                showAlert('Please enter at least one item for your custom topic!', 'warning');
+                customItemsInput.focus();
+                return;
+            }
+            
+            if (itemsArray.length > 20) {
+                e.preventDefault();
+                showAlert('Please limit your custom topic to 20 items or fewer!', 'warning');
+                customItemsInput.focus();
+                return;
+            }
+        }
+        
         // Show loading modal
         loadingModal.show();
         
@@ -101,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateGenerateButton(selectedTopic);
                 showAlert('Generation is taking longer than expected. Please check if the download started.', 'info');
             }
-        }, 30000); // 30 seconds timeout
+        }, 45000); // 45 seconds timeout for custom topics (may take longer)
     });
     
     // Handle successful download (when modal needs to be hidden)

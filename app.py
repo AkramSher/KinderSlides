@@ -233,21 +233,37 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate_presentation():
-    """Generate PowerPoint presentation based on selected topic"""
+    """Generate PowerPoint presentation based on selected or custom topic"""
     try:
         topic = request.form.get('topic')
+        custom_topic = request.form.get('custom_topic', '').strip()
+        custom_items = request.form.get('custom_items', '').strip()
         
-        if not topic or topic not in TOPICS:
-            flash('Please select a valid topic.', 'error')
+        # Handle custom topic
+        if topic == "custom" and custom_topic and custom_items:
+            topic = custom_topic
+            # Parse custom items (comma-separated)
+            items = [item.strip() for item in custom_items.split(',') if item.strip()]
+            if not items:
+                flash('Please provide at least one item for your custom topic.', 'error')
+                return redirect(url_for('index'))
+            
+            # Generate search terms for custom items
+            search_terms = {}
+            for item in items:
+                search_terms[item] = f"{item} cartoon for kids"
+            
+        elif topic and topic in TOPICS:
+            # Use predefined topic
+            items = TOPICS[topic]
+            search_terms = SEARCH_TERMS[topic]
+        else:
+            flash('Please select a valid topic or create a custom one.', 'error')
             return redirect(url_for('index'))
         
         if not PIXABAY_API_KEY or PIXABAY_API_KEY == "your-pixabay-api-key":
             flash('Pixabay API key is not configured. Please contact your administrator.', 'error')
             return redirect(url_for('index'))
-        
-        # Get items and search terms for the topic
-        items = TOPICS[topic]
-        search_terms = SEARCH_TERMS[topic]
         
         logging.info(f"Generating presentation for topic: {topic}")
         
@@ -264,7 +280,7 @@ def generate_presentation():
         temp_file.close()
         
         # Generate filename
-        filename = f"KinderSlides_{topic.replace(' ', '_')}_{uuid.uuid4().hex[:8]}.pptx"
+        filename = f"KinderSlides_{topic.replace(' ', '_').replace('/', '_')}_{uuid.uuid4().hex[:8]}.pptx"
         
         logging.info(f"Presentation created successfully: {filename}")
         

@@ -2,7 +2,7 @@
 
 ## Overview
 
-KinderSlides is a Flask web application that automatically generates educational PowerPoint presentations for kindergarten students. The application creates visually appealing slides with images and text covering topics like ABC letters, numbers, shapes, and colors. It integrates with the Pixabay API to fetch appropriate child-friendly images for each topic.
+KinderSlides is a Flask web application that automatically generates educational PowerPoint presentations for kindergarten students. The application creates visually appealing slides with images and text covering both predefined topics (ABC letters, numbers, shapes, and colors) and custom user-defined topics. It integrates with the Pixabay API to fetch appropriate child-friendly images for each topic, making it flexible for any kindergarten curriculum needs.
 
 ## User Preferences
 
@@ -29,8 +29,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Topic Management System
 - **Problem**: Need to organize different educational topics for kindergarten students
-- **Solution**: Dictionary-based topic definitions with predefined content for ABC, Numbers, Shapes, and Colors
-- **Benefits**: Easy to maintain and extend with new topics
+- **Solution**: Hybrid system with predefined topics (ABC, Numbers, Shapes, Colors) plus custom topic creation
+- **Features**: Users can create custom topics with their own items (e.g., Animals, Fruits, Transportation)
+- **Benefits**: Flexible curriculum support while maintaining educational quality standards
 
 ### Image Integration
 - **Problem**: Need high-quality, child-appropriate images for presentations

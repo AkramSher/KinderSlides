@@ -53,7 +53,43 @@
                                     {% for topic in topics %}
                                         <option value="{{ topic }}">{{ topic }}</option>
                                     {% endfor %}
+                                    <option value="custom">🎨 Create Custom Topic</option>
                                 </select>
+                            </div>
+                            
+                            <!-- Custom Topic Section -->
+                            <div id="customTopicSection" class="mb-4" style="display: none;">
+                                <div class="card kindergarten-custom-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-magic me-2"></i>Create Your Own Topic
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="custom_topic" class="form-label">
+                                                <i class="fas fa-tag me-2"></i>Topic Name:
+                                            </label>
+                                            <input type="text" class="form-control kindergarten-input" id="custom_topic" name="custom_topic" 
+                                                   placeholder="e.g., Animals, Fruits, Transportation" maxlength="50">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="custom_items" class="form-label">
+                                                <i class="fas fa-list me-2"></i>Items (separate with commas):
+                                            </label>
+                                            <textarea class="form-control kindergarten-input" id="custom_items" name="custom_items" 
+                                                      rows="3" placeholder="e.g., Dog, Cat, Bird, Fish, Rabbit" maxlength="500"></textarea>
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Enter items separated by commas. Each item will get its own slide with a fun cartoon image!
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                            <strong>Example:</strong> Topic: "Farm Animals" | Items: "Cow, Pig, Chicken, Horse, Sheep"
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="d-grid">
@@ -109,6 +145,44 @@
                                 <i class="fas fa-palette display-4 text-info mb-3"></i>
                                 <h5 class="card-title">Colors</h5>
                                 <p class="card-text">Vibrant colors to help kids learn their favorites!</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        <div class="card kindergarten-examples">
+                            <div class="card-header text-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>Custom Topic Ideas
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="example-topic">
+                                            <h6 class="text-primary">🐾 Animals</h6>
+                                            <small class="text-muted">Dog, Cat, Bird, Fish, Rabbit, Horse</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="example-topic">
+                                            <h6 class="text-success">🍎 Fruits</h6>
+                                            <small class="text-muted">Apple, Banana, Orange, Grapes, Strawberry</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="example-topic">
+                                            <h6 class="text-warning">🚗 Transportation</h6>
+                                            <small class="text-muted">Car, Bus, Train, Airplane, Bicycle</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Create any topic perfect for your kindergarten students!
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
