@@ -20,8 +20,29 @@ body {
     }
     
     .card-body {
-        padding: 2rem !important;
+        padding: 1.5rem !important;
     }
+}
+
+/* Better alignment for all screen sizes */
+.text-center {
+    text-align: center !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.flex-column {
+    flex-direction: column !important;
+}
+
+.justify-content-center {
+    justify-content: center !important;
+}
+
+.align-items-center {
+    align-items: center !important;
 }
 
 /* Kindergarten-friendly color scheme */
@@ -114,6 +135,9 @@ body {
     border-radius: 15px;
     transition: all 0.3s ease;
     background: var(--bs-body-bg);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .kindergarten-preview:hover {
@@ -124,12 +148,24 @@ body {
 
 .kindergarten-preview .card-body {
     padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex-grow: 1;
 }
 
 .kindergarten-preview .card-title {
     color: var(--kindergarten-primary);
     font-weight: bold;
     font-size: 1.3rem;
+    margin-bottom: 1rem;
+}
+
+.kindergarten-preview .card-text {
+    color: var(--bs-secondary);
+    line-height: 1.5;
 }
 
 /* Loading animations */
@@ -200,6 +236,42 @@ body {
         font-size: 1.1rem;
         padding: 12px 25px;
     }
+    
+    /* Better mobile grid alignment */
+    .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .col-md-6 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+/* Improved grid layout for preview cards */
+#topicPreviews .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+#topicPreviews .col-md-6 {
+    display: flex;
+    margin-bottom: 1.5rem;
+}
+
+/* Better spacing and alignment */
+.mb-3, .my-3 {
+    margin-bottom: 1.5rem !important;
+}
+
+.mb-4, .my-4 {
+    margin-bottom: 2rem !important;
+}
+
+.mb-5, .my-5 {
+    margin-bottom: 3rem !important;
 }
 
 /* Footer styling */

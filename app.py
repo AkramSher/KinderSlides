@@ -493,18 +493,20 @@ def create_presentation(topic, items, search_terms):
         title = title_slide.shapes.title
         subtitle = title_slide.placeholders[1]
         
-        title.text = f"Learning {topic}"
-        subtitle.text = "KinderSlides Presentation"
+        if title:
+            title.text = f"Learning {topic}"
+            # Style title slide
+            if title.text_frame:
+                title_para = title.text_frame.paragraphs[0]
+                title_para.font.size = Pt(54)
+                title_para.font.bold = True
+                title_para.font.color.rgb = RGBColor(255, 87, 51)  # Orange-red
         
-        # Style title slide
-        title_para = title.text_frame.paragraphs[0]
-        title_para.font.size = Pt(54)
-        title_para.font.bold = True
-        title_para.font.color.rgb = RGBColor(255, 87, 51)  # Orange-red
-        
-        subtitle_para = subtitle.text_frame.paragraphs[0]
-        subtitle_para.font.size = Pt(32)
-        subtitle_para.font.color.rgb = RGBColor(52, 152, 219)  # Blue
+        if subtitle and hasattr(subtitle, 'text_frame') and subtitle.text_frame:
+            subtitle.text = "KinderSlides Presentation"
+            subtitle_para = subtitle.text_frame.paragraphs[0]
+            subtitle_para.font.size = Pt(32)
+            subtitle_para.font.color.rgb = RGBColor(52, 152, 219)  # Blue
         
         # Create slides for each item
         for item in items:
