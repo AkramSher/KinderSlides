@@ -88,88 +88,203 @@ SEARCH_TERMS = {
     }
 }
 
+def validate_image_relevance(tags, search_words, item_name):
+    """Check if image tags are relevant to the search item"""
+    tags_lower = tags.lower()
+    search_words_lower = [word.lower() for word in search_words if len(word) > 2]
+    
+    # Extract main word from item name
+    if item_name and ' - ' in item_name:
+        main_word = item_name.split(' - ')[-1].lower()
+    else:
+        main_word = (item_name or '').lower()
+    
+    # Check for exact matches first
+    if main_word and main_word in tags_lower:
+        return True
+    
+    # Check for partial matches
+    relevance_score = 0
+    for word in search_words_lower:
+        if word in tags_lower:
+            relevance_score += 1
+    
+    # Reject images with irrelevant keywords
+    irrelevant_keywords = ['furniture', 'table', 'chair', 'desk', 'bag', 'briefcase', 'suitcase', 'box', 'container']
+    for keyword in irrelevant_keywords:
+        if keyword in tags_lower and main_word != keyword:
+            return False
+    
+    return relevance_score >= 1
+
 def search_pixabay_image(search_term, item_name=None):
-    """Search for an image on Pixabay API with improved accuracy"""
+    """Search for an image on Pixabay API with improved accuracy and validation"""
     
     # Extract base word for better searching
     base_word = search_term
     if item_name:
         base_word = item_name.split(' - ')[-1] if ' - ' in item_name else item_name
     
-    # Create multiple search variations for better results
-    search_variations = [search_term]
+    # Create comprehensive search variations
+    search_variations = []
     
     if item_name:
-        # Add more specific search terms
+        # Multiple specific search strategies
         search_variations = [
-            f"{base_word} cartoon illustration",
-            f"{base_word} vector illustration",
-            f"{base_word} cartoon kids",
-            f"{base_word} simple illustration",
-            search_term,  # Original search term as fallback
+            f"{base_word} illustration vector",
+            f"{base_word} cartoon children",
+            f"{base_word} simple drawing",
+            f"{base_word} clip art",
+            f"{base_word} icon",
+            search_term,  # Original search term
+            base_word,    # Just the base word
         ]
+    else:
+        search_variations = [search_term, base_word]
+    
+    best_image = None
+    search_words = base_word.split()
     
     for search in search_variations:
         try:
-            # Try with education category first
-            params = {
-                'key': PIXABAY_API_KEY,
-                'q': search,
-                'image_type': 'illustration',
-                'category': 'education',
-                'safesearch': 'true',
-                'per_page': 10,
-                'min_width': 400,
-                'min_height': 300
-            }
+            # Try multiple parameter combinations
+            param_sets = [
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'illustration',
+                    'category': 'education',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                },
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'vector',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                },
+                {
+                    'key': PIXABAY_API_KEY,
+                    'q': search,
+                    'image_type': 'illustration',
+                    'safesearch': 'true',
+                    'per_page': 20,
+                    'min_width': 300,
+                    'min_height': 200
+                }
+            ]
             
-            response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            # Filter results to find relevant images
-            if data.get('hits'):
-                for hit in data['hits']:
-                    tags = hit.get('tags', '').lower()
-                    # Check if the image tags are relevant to our search
-                    if any(word in tags for word in base_word.lower().split() if len(word) > 2):
-                        image_url = hit['webformatURL']
-                        downloaded_image = download_image(image_url)
-                        if downloaded_image:
-                            logging.info(f"Found relevant image for '{item_name}' with search: '{search}'")
-                            return downloaded_image
-                
-                # If no relevant images found, try the first result as fallback
-                if len(data['hits']) > 0:
-                    image_url = data['hits'][0]['webformatURL']
-                    downloaded_image = download_image(image_url)
-                    if downloaded_image:
-                        logging.info(f"Using fallback image for '{item_name}' with search: '{search}'")
-                        return downloaded_image
-            
-            # If education category doesn't work, try without category restriction
-            if not data.get('hits'):
-                params.pop('category', None)
+            for params in param_sets:
                 response = requests.get(PIXABAY_BASE_URL, params=params, timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 
                 if data.get('hits'):
+                    # Score and filter results
                     for hit in data['hits']:
-                        tags = hit.get('tags', '').lower()
-                        if any(word in tags for word in base_word.lower().split() if len(word) > 2):
+                        tags = hit.get('tags', '')
+                        if validate_image_relevance(tags, search_words, item_name):
                             image_url = hit['webformatURL']
                             downloaded_image = download_image(image_url)
                             if downloaded_image:
-                                logging.info(f"Found relevant image for '{item_name}' with search: '{search}' (no category)")
+                                logging.info(f"Found validated image for '{item_name}' with search: '{search}' (tags: {tags[:100]})")
                                 return downloaded_image
+                    
+                    # If no validated image found, store best candidate
+                    if not best_image and len(data['hits']) > 0:
+                        best_image = data['hits'][0]
                             
         except Exception as e:
             logging.error(f"Error searching Pixabay for '{search}': {str(e)}")
             continue
     
-    logging.warning(f"No relevant images found for: {item_name or search_term}")
+    # Use best candidate if no validated image found
+    if best_image:
+        try:
+            image_url = best_image['webformatURL']
+            downloaded_image = download_image(image_url)
+            if downloaded_image:
+                logging.warning(f"Using best available image for '{item_name}' (tags: {best_image.get('tags', '')[:100]})")
+                return downloaded_image
+        except Exception as e:
+            logging.error(f"Error downloading best candidate image: {str(e)}")
+    
+    logging.warning(f"No suitable images found for: {item_name or search_term}")
     return None
+
+def create_text_based_visual(slide, item):
+    """Create an attractive text-based visual when no image is available"""
+    # Create a colorful background shape
+    bg_left = Inches(2)
+    bg_top = Inches(2.5)
+    bg_width = Inches(9.33)
+    bg_height = Inches(4.5)
+    
+    # Add background rectangle
+    from pptx.enum.shapes import MSO_SHAPE
+    bg_shape = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        bg_left, bg_top, bg_width, bg_height
+    )
+    
+    # Style the background
+    bg_fill = bg_shape.fill
+    bg_fill.solid()
+    bg_fill.fore_color.rgb = RGBColor(240, 248, 255)  # Light blue background
+    
+    bg_line = bg_shape.line
+    bg_line.color.rgb = RGBColor(52, 152, 219)  # Blue border
+    bg_line.width = Pt(3)
+    
+    # Add main text
+    text_left = Inches(2.5)
+    text_top = Inches(3.5)
+    text_width = Inches(8.33)
+    text_height = Inches(2.5)
+    
+    text_box = slide.shapes.add_textbox(text_left, text_top, text_width, text_height)
+    text_frame = text_box.text_frame
+    text_frame.text = item.split(' - ')[-1] if ' - ' in item else item
+    
+    # Style main text
+    text_paragraph = text_frame.paragraphs[0]
+    text_paragraph.font.size = Pt(72)
+    text_paragraph.font.bold = True
+    text_paragraph.font.color.rgb = RGBColor(52, 152, 219)  # Blue
+    text_paragraph.alignment = PP_ALIGN.CENTER
+    
+    # Add decorative emoji or symbol if appropriate
+    symbol_map = {
+        'apple': '🍎', 'ball': '⚽', 'cat': '🐱', 'dog': '🐶', 'elephant': '🐘',
+        'fish': '🐟', 'car': '🚗', 'bus': '🚌', 'train': '🚂', 'plane': '✈️',
+        'sun': '☀️', 'moon': '🌙', 'star': '⭐', 'heart': '❤️', 'tree': '🌳'
+    }
+    
+    item_lower = item.lower()
+    symbol = None
+    for key, emoji in symbol_map.items():
+        if key in item_lower:
+            symbol = emoji
+            break
+    
+    if symbol:
+        symbol_left = Inches(6)
+        symbol_top = Inches(3)
+        symbol_width = Inches(1.33)
+        symbol_height = Inches(1)
+        
+        symbol_box = slide.shapes.add_textbox(symbol_left, symbol_top, symbol_width, symbol_height)
+        symbol_frame = symbol_box.text_frame
+        symbol_frame.text = symbol
+        
+        symbol_paragraph = symbol_frame.paragraphs[0]
+        symbol_paragraph.font.size = Pt(60)
+        symbol_paragraph.alignment = PP_ALIGN.CENTER
 
 def download_image(image_url):
     """Download image from URL and return as BytesIO object"""
@@ -251,22 +366,9 @@ def create_presentation(topic, items, search_terms):
                     slide.shapes.add_picture(image_stream, image_left, image_top, image_width, image_height)
                     logging.info(f"Added image for {item}")
                 else:
-                    # Add placeholder text if no image found
-                    placeholder_left = Inches(2)
-                    placeholder_top = Inches(3)
-                    placeholder_width = Inches(9.33)
-                    placeholder_height = Inches(3)
-                    
-                    placeholder_box = slide.shapes.add_textbox(placeholder_left, placeholder_top, placeholder_width, placeholder_height)
-                    placeholder_frame = placeholder_box.text_frame
-                    placeholder_frame.text = f"Image for {item}\n(Not available)"
-                    
-                    placeholder_paragraph = placeholder_frame.paragraphs[0]
-                    placeholder_paragraph.font.size = Pt(48)
-                    placeholder_paragraph.font.color.rgb = RGBColor(155, 155, 155)  # Gray
-                    placeholder_paragraph.alignment = PP_ALIGN.CENTER
-                    
-                    logging.warning(f"No image found for {item}, added placeholder")
+                    # Create a colorful text-based visual when no image is available
+                    create_text_based_visual(slide, item)
+                    logging.warning(f"No image found for {item}, created text-based visual")
                     
             except Exception as e:
                 logging.error(f"Error creating slide for {item}: {str(e)}")

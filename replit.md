@@ -35,9 +35,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Image Integration
 - **Problem**: Need high-quality, child-appropriate images for presentations
-- **Solution**: Pixabay API integration with curated search terms
+- **Solution**: Advanced Pixabay API integration with smart validation and fallback systems
 - **Configuration**: Environment-based API key management
-- **Search Strategy**: Topic-specific search terms optimized for cartoon/child-friendly results
+- **Search Strategy**: Multi-layered approach with relevance validation and irrelevant content filtering
+- **Quality Assurance**: Tag-based validation to ensure image relevance and reject inappropriate matches
+- **Fallback System**: Attractive text-based visuals with emoji when suitable images unavailable
 
 ### Presentation Generation
 - **Library**: python-pptx for PowerPoint file creation
