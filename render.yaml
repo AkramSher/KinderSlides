@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: kinderslides
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT main:app"
+    envVars:
+      - key: PIXABAY_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
