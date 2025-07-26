@@ -11,7 +11,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 import tempfile
 import uuid
-from openai import OpenAI
+import openai  
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,8 +24,10 @@ PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "your-pixabay-api-key")
 PIXABAY_BASE_URL = "https://pixabay.com/api/"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+# Initialize OpenAI API key (older SDK style)
+if OPENAI_API_KEY:
+    openai.api_key = OPENAI_API_KEY
+
 
 # Global flag to disable AI validation when rate limits are hit
 # Temporarily disable AI to prevent rate limit errors
@@ -248,7 +250,7 @@ def validate_image_with_ai(image_data, expected_item):
         
         # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
         # do not change this unless explicitly requested by the user
-        response = openai_client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
                 {
